@@ -195,54 +195,16 @@ func bounds(l float64) float64 {
 	return math.Min(math.Max(l, 0.0), 255)
 }
 
+// importance keeps the historic unexported signature for the legacy
+// Analyzer. The math lives in importanceFor so the orchestration layer can
+// reuse it with different parameters.
 func importance(crop Crop, x, y int) float64 {
-	if crop.Min.X > x || x >= crop.Max.X || crop.Min.Y > y || y >= crop.Max.Y {
-		return outsideImportance
-	}
-
-	xf := float64(x-crop.Min.X) / float64(crop.Dx())
-	yf := float64(y-crop.Min.Y) / float64(crop.Dy())
-
-	px := math.Abs(0.5-xf) * 2.0
-	py := math.Abs(0.5-yf) * 2.0
-
-	dx := math.Max(px-1.0+edgeRadius, 0.0)
-	dy := math.Max(py-1.0+edgeRadius, 0.0)
-	d := (dx*dx + dy*dy) * edgeWeight
-
-	s := 1.41 - math.Sqrt(px*px+py*py)
-	if ruleOfThirds {
-		s += (math.Max(0.0, s+d+0.5) * 1.2) * (thirds(px) + thirds(py))
-	}
-
-	return s + d
+	return importanceFor(crop.Rectangle, legacyScoringParams, x, y)
 }
 
+// score keeps the historic unexported signature for the legacy Analyzer.
 func score(output *image.RGBA, crop Crop) Score {
-	width := output.Bounds().Dx()
-	height := output.Bounds().Dy()
-	score := Score{}
-
-	// same loops but with downsampling
-	//for y := 0; y < height; y++ {
-	//for x := 0; x < width; x++ {
-	for y := 0; y <= height-scoreDownSample; y += scoreDownSample {
-		for x := 0; x <= width-scoreDownSample; x += scoreDownSample {
-			c := output.RGBAAt(x, y)
-			r8 := float64(c.R)
-			g8 := float64(c.G)
-			b8 := float64(c.B)
-
-			imp := importance(crop, x, y)
-			det := g8 / 255.0
-
-			score.Skin += r8 / 255.0 * (det + skinBias) * imp
-			score.Detail += det * imp
-			score.Saturation += b8 / 255.0 * (det + saturationBias) * imp
-		}
-	}
-
-	return score
+	return scoreFor(output, Candidate{Rectangle: crop.Rectangle}, legacyScoringParams)
 }
 
 func analyse(logger Logger, img *image.RGBA, cropWidth, cropHeight, realMinScale float64) image.Rectangle {

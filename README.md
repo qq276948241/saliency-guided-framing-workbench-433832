@@ -17,7 +17,7 @@ Image: [https://www.flickr.com/photos/endogamia/5682480447](https://www.flickr.c
 
 ## Installation
 
-Make sure you have a working Go environment (Go 1.12 or higher is required).
+Make sure you have a working Go environment (Go 1.13 or higher is required).
 See the [install instructions](https://golang.org/doc/install.html).
 
 To install smartcrop, simply run:
@@ -63,6 +63,27 @@ func main() {
 ```
 
 Also see the test cases in smartcrop_test.go and cli application in cmd/smartcrop/ for further working examples.
+
+## Saliency crop orchestration
+
+On top of the `Analyzer` API there is a deterministic orchestration layer with
+input normalization, parallel candidate scoring and an offline acceptance
+suite. See [ORCHESTRATION.md](./ORCHESTRATION.md).
+
+```go
+orchestrator, err := smartcrop.NewOrchestrator(smartcrop.Config{Seed: 1})
+res, err := orchestrator.Crop(ctx, smartcrop.Request{
+    Image:  img,
+    Width:  300,
+    Height: 150,
+})
+// res.Rectangle is relative to img.Bounds().Min, res.SourceRectangle is in
+// the original coordinate system, and res.Digest identifies the run.
+```
+
+Run the acceptance suite (no network access required):
+
+    go run ./cmd/smartcrop-acceptance -seed 1 -repeat 2
 
 ## Simple CLI application
 

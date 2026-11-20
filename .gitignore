@@ -23,3 +23,7 @@ _testmain.go
 *.test
 
 *~
+
+# smartcrop debug artifacts
+smartcrop.jpg
+smartcrop_*.png
